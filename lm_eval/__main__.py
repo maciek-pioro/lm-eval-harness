@@ -6,6 +6,7 @@ import argparse
 import logging
 from pathlib import Path
 import numpy as np
+import wandb
 from lm_eval import evaluator, utils
 from lm_eval.api.registry import ALL_TASKS
 from lm_eval.logger import eval_logger, SPACING
@@ -23,9 +24,9 @@ def _handle_non_serializable(o):
         return str(o)
 
 
-def parse_eval_args() -> argparse.Namespace:
+def get_argparser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
-    parser.add_argument("--model", required=True, help="Name of model e.g. `hf`")
+    parser.add_argument("--model", default=None, help="Name of model e.g. `hf`")
     parser.add_argument(
         "--tasks",
         default=None,
@@ -41,6 +42,25 @@ def parse_eval_args() -> argparse.Namespace:
         type=int,
         default=None,
         help="Number of examples in few-shot context",
+    )
+    parser.add_argument(
+        "--fs_delimiter",
+        type=str,
+        default="\n\n",
+        help="FS Delimiter for few-shot examples. Default is two newlines.",
+    )
+    mixing_strategies = ["mean", "last", "sum", "first"]
+    parser.add_argument(
+        "--ssm_mixing_strategy",
+        type=str,
+        default="mean",
+        choices=mixing_strategies,
+    )
+    parser.add_argument(
+        "--conv_mixing_strategy",
+        type=str,
+        default="last",
+        choices=mixing_strategies,
     )
     parser.add_argument("--batch_size", type=str, default=1)
     parser.add_argument(
@@ -79,6 +99,7 @@ def parse_eval_args() -> argparse.Namespace:
     parser.add_argument(
         "--check_integrity",
         action="store_true",
+        default=False,
         help="Whether to run the relevant part of the test suite for the tasks",
     )
     parser.add_argument(
@@ -111,6 +132,11 @@ def parse_eval_args() -> argparse.Namespace:
         default="INFO",
         help="Log error when tasks are not registered.",
     )
+    return parser
+
+
+def parse_eval_args() -> argparse.Namespace:
+    parser = get_argparser()
     return parser.parse_args()
 
 
@@ -118,6 +144,8 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
     if not args:
         # we allow for args to be passed externally, else we parse them ourselves
         args = parse_eval_args()
+
+    wandb.config.update(args)
 
     eval_logger.setLevel(getattr(logging, f"{args.verbosity}"))
     os.environ["TOKENIZERS_PARALLELISM"] = "false"
@@ -188,6 +216,9 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
         model_args=args.model_args,
         tasks=task_names,
         num_fewshot=args.num_fewshot,
+        fs_group_size=args.fs_group_size,
+        ssm_mixing_strategy=args.ssm_mixing_strategy,
+        conv_mixing_strategy=args.conv_mixing_strategy,
         batch_size=args.batch_size,
         max_batch_size=args.max_batch_size,
         device=args.device,
@@ -222,6 +253,10 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
                     )
                     filename.open("w").write(samples_dumped)
 
+        import pprint
+
+        pprint.pp(results)
+        wandb.log(results)
         print(
             f"{args.model} ({args.model_args}), limit: {args.limit}, num_fewshot: {args.num_fewshot}, "
             f"batch_size: {args.batch_size}{f' ({batch_sizes})' if batch_sizes else ''}"

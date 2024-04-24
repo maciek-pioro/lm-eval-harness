@@ -64,7 +64,9 @@ class TaskConfig(dict):
     training_split: str = None
     validation_split: str = None
     test_split: str = None
-    fewshot_split: str = None  # TODO: assert that this not None if num_fewshot > 0. (?) assert if this is same split as one evaling (?)
+    fewshot_split: str = (
+        None  # TODO: assert that this not None if num_fewshot > 0. (?) assert if this is same split as one evaling (?)
+    )
     # formatting / prompting options.
     # see docs/advanced_task_guide.md for more info
     process_docs: Callable = None
@@ -75,7 +77,8 @@ class TaskConfig(dict):
     use_prompt: str = None
     description: str = ""
     target_delimiter: str = " "
-    fewshot_delimiter: str = "\n\n"
+    # fewshot_delimiter: str = "\n\n"
+    fewshot_delimiter: str = "<fewshot_delimiter>"
     fewshot_config: dict = None
     # runtime configuration options
     num_fewshot: int = 0
@@ -88,7 +91,9 @@ class TaskConfig(dict):
     should_decontaminate: bool = False
     doc_to_decontamination_query: str = None
 
-    metadata: str = None  # by default, not used in the code. allows for users to pass arbitrary info to tasks
+    metadata: str = (
+        None  # by default, not used in the code. allows for users to pass arbitrary info to tasks
+    )
 
     def __post_init__(self) -> None:
         if self.dataset_path and ("." in self.dataset_path):
@@ -115,9 +120,11 @@ class TaskConfig(dict):
             if self.output_type == "generate_until":
                 # ensure that we greedily generate in absence of explicit arguments otherwise
                 self.generation_kwargs = {
-                    "until": None
-                    if self.fewshot_delimiter is None
-                    else [self.fewshot_delimiter],
+                    "until": (
+                        None
+                        if self.fewshot_delimiter is None
+                        else [self.fewshot_delimiter]
+                    ),
                     "do_sample": False,
                 }
 

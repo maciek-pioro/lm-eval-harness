@@ -31,6 +31,9 @@ def simple_evaluate(
     model_args=None,
     tasks=[],
     num_fewshot=None,
+    fs_group_size=None,
+    ssm_mixing_strategy="mean",
+    conv_mixing_strategy="last",
     batch_size=None,
     max_batch_size=None,
     device=None,
@@ -93,6 +96,9 @@ def simple_evaluate(
                 "batch_size": batch_size,
                 "max_batch_size": max_batch_size,
                 "device": device,
+                "fs_group_size": fs_group_size,
+                "ssm_mixing_strategy": ssm_mixing_strategy,
+                "conv_mixing_strategy": conv_mixing_strategy,
             },
         )
     else:
@@ -143,14 +149,14 @@ def simple_evaluate(
     if lm.rank == 0:
         # add info about the model and few shot config
         results["config"] = {
-            "model": model
-            if isinstance(model, str)
-            else model.model.config._name_or_path,
+            "model": (
+                model if isinstance(model, str) else model.model.config._name_or_path
+            ),
             "model_args": model_args,
             "batch_size": batch_size,
-            "batch_sizes": list(lm.batch_sizes.values())
-            if hasattr(lm, "batch_sizes")
-            else [],
+            "batch_sizes": (
+                list(lm.batch_sizes.values()) if hasattr(lm, "batch_sizes") else []
+            ),
             "device": device,
             "use_cache": use_cache,
             "limit": limit,
@@ -458,9 +464,11 @@ def evaluate(
             if bootstrap_iters > 0:
                 stderr = lm_eval.api.metrics.stderr_for_metric(
                     metric=task.aggregation()[metric],
-                    bootstrap_iters=min(bootstrap_iters, 100)
-                    if metric in ["bleu", "chrf", "ter"]
-                    else bootstrap_iters,
+                    bootstrap_iters=(
+                        min(bootstrap_iters, 100)
+                        if metric in ["bleu", "chrf", "ter"]
+                        else bootstrap_iters
+                    ),
                 )
 
                 if stderr is not None:
