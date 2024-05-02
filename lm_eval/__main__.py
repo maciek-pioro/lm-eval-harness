@@ -62,6 +62,11 @@ def get_argparser() -> argparse.ArgumentParser:
         default="last",
         choices=mixing_strategies,
     )
+    parser.add_argument(
+        "--n_permutations",
+        type=int,
+        default=1,
+    )
     parser.add_argument("--batch_size", type=str, default=1)
     parser.add_argument(
         "--max_batch_size",
@@ -219,6 +224,7 @@ def cli_evaluate(args: Union[argparse.Namespace, None] = None) -> None:
         fs_group_size=args.fs_group_size,
         ssm_mixing_strategy=args.ssm_mixing_strategy,
         conv_mixing_strategy=args.conv_mixing_strategy,
+        n_permutations=args.n_permutations,
         batch_size=args.batch_size,
         max_batch_size=args.max_batch_size,
         device=args.device,

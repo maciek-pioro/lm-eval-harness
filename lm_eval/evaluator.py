@@ -34,6 +34,7 @@ def simple_evaluate(
     fs_group_size=None,
     ssm_mixing_strategy="mean",
     conv_mixing_strategy="last",
+    n_permutations=1,
     batch_size=None,
     max_batch_size=None,
     device=None,
@@ -99,6 +100,7 @@ def simple_evaluate(
                 "fs_group_size": fs_group_size,
                 "ssm_mixing_strategy": ssm_mixing_strategy,
                 "conv_mixing_strategy": conv_mixing_strategy,
+                "n_permutations": n_permutations,
             },
         )
     else:
